@@ -23,12 +23,15 @@ import {
   TableRow,
   Paper,
   Chip,
+  Pagination,
 } from '@mui/material';
 import { Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon, LibraryBooks as LibraryBooksIcon } from '@mui/icons-material';
 import { toast } from 'react-toastify';
 import api from '../api/axios';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
+import BookSearch from '../components/BookSearch';
+import BookList from '../components/BookList';
 
 interface Book {
   id: number;
@@ -68,6 +71,16 @@ interface Borrowing {
   status: 'BORROWED' | 'RETURNED' | 'OVERDUE';
 }
 
+interface SearchParams {
+  query?: string;
+  genre?: string;
+  author?: string;
+  publisher?: string;
+  yearFrom?: number;
+  yearTo?: number;
+  available?: boolean;
+}
+
 const initialFormData: BookFormData = {
   title: '',
   author: '',
@@ -91,22 +104,53 @@ const ManageBooks = () => {
   const [borrowings, setBorrowings] = useState<Borrowing[]>([]);
   const [borrowingsLoading, setBorrowingsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [searchParams, setSearchParams] = useState<SearchParams>({});
   const { token, user } = useSelector((state: RootState) => state.auth);
 
-  useEffect(() => {
-    fetchBooks();
-  }, []);
-
-  const fetchBooks = async () => {
+  const fetchBooks = async (params: SearchParams = {}, pageNumber = 0) => {
+    setLoading(true);
     try {
-      const response = await api.get('/books');
+      const queryParams = new URLSearchParams();
+      
+      // Add search parameters
+      if (params.query) queryParams.append('query', params.query);
+      if (params.genre) queryParams.append('genre', params.genre);
+      if (params.author) queryParams.append('author', params.author);
+      if (params.publisher) queryParams.append('publisher', params.publisher);
+      if (params.yearFrom) queryParams.append('yearFrom', params.yearFrom.toString());
+      if (params.yearTo) queryParams.append('yearTo', params.yearTo.toString());
+      if (params.available) queryParams.append('available', params.available.toString());
+      
+      // Add pagination parameters
+      queryParams.append('page', pageNumber.toString());
+      queryParams.append('size', '9');
+      queryParams.append('sort', 'title,asc');
+
+      const response = await api.get(`/books/search?${queryParams.toString()}`);
       setBooks(response.data.content);
+      setTotalPages(response.data.totalPages);
+      setPage(pageNumber);
     } catch (error: any) {
       console.error('Error fetching books:', error);
       toast.error(error.response?.data?.message || 'Failed to fetch books');
     } finally {
       setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    fetchBooks();
+  }, []);
+
+  const handleSearch = (params: SearchParams) => {
+    setSearchParams(params);
+    fetchBooks(params, 0);
+  };
+
+  const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
+    fetchBooks(searchParams, value - 1);
   };
 
   const handleOpenDialog = (book?: Book) => {
@@ -247,60 +291,26 @@ const ManageBooks = () => {
         </Button>
       </Box>
 
-      <Grid container spacing={3}>
-        {books.map((book) => (
-          <Grid item xs={12} sm={6} md={4} key={book.id}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" component="div" gutterBottom>
-                  {book.title}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Author: {book.author}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  ISBN: {book.isbn}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Genre: {book.genre}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Publisher: {book.publisher}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Year: {book.publicationYear}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Available: {book.availableCopies} / {book.totalCopies}
-                </Typography>
-              </CardContent>
-              <CardActions>
-                <IconButton
-                  size="small"
-                  color="primary"
-                  onClick={() => handleOpenDialog(book)}
-                >
-                  <EditIcon />
-                </IconButton>
-                <IconButton
-                  size="small"
-                  color="error"
-                  onClick={() => handleDelete(book.id)}
-                >
-                  <DeleteIcon />
-                </IconButton>
-                <IconButton
-                  size="small"
-                  color="info"
-                  onClick={() => handleOpenBorrowingsDialog(book)}
-                >
-                  <LibraryBooksIcon />
-                </IconButton>
-              </CardActions>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
+      <BookList
+        books={books}
+        loading={loading}
+        isAdmin={true}
+        onSearch={handleSearch}
+        onEdit={handleOpenDialog}
+        onDelete={handleDelete}
+        onViewHistory={handleOpenBorrowingsDialog}
+      />
+
+      {books.length > 0 && (
+        <Box display="flex" justifyContent="center" mt={4} mb={4}>
+          <Pagination
+            count={totalPages}
+            page={page + 1}
+            onChange={handlePageChange}
+            color="primary"
+          />
+        </Box>
+      )}
 
       <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
         <DialogTitle>{editingBookId ? 'Edit Book' : 'Add New Book'}</DialogTitle>

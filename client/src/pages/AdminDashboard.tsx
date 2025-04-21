@@ -20,8 +20,8 @@ import {
   TextField,
   Alert,
 } from '@mui/material';
-import axios from 'axios';
-import { RootState } from '../store/store';
+import { RootState } from '../store';
+import api from '../api/axios';
 
 interface Book {
   id: number;
@@ -62,9 +62,7 @@ const AdminDashboard = () => {
 
   const fetchBorrowings = async () => {
     try {
-      const response = await axios.get('http://localhost:8080/api/borrowings', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await api.get('/borrowings');
       setBorrowings(response.data.content);
     } catch (error) {
       setError('Error fetching borrowings');
@@ -73,13 +71,7 @@ const AdminDashboard = () => {
 
   const handleReturn = async (borrowingId: number) => {
     try {
-      await axios.post(
-        `http://localhost:8080/api/borrowings/return/${borrowingId}`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      await api.post(`/borrowings/return/${borrowingId}`);
       setSuccess('Book returned successfully');
       fetchBorrowings();
     } catch (error) {
@@ -89,13 +81,7 @@ const AdminDashboard = () => {
 
   const handleAddBook = async () => {
     try {
-      await axios.post(
-        'http://localhost:8080/api/books',
-        newBook,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      await api.post('/books', newBook);
       setSuccess('Book added successfully');
       setOpenDialog(false);
       setNewBook({});

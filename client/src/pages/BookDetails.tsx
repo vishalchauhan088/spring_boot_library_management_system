@@ -10,8 +10,8 @@ import {
   Grid,
   Alert,
 } from '@mui/material';
-import axios from 'axios';
-import { RootState } from '../store/store';
+import { RootState } from '../store';
+import api from '../api/axios';
 
 interface Book {
   id: number;
@@ -36,7 +36,7 @@ const BookDetails = () => {
   useEffect(() => {
     const fetchBook = async () => {
       try {
-        const response = await axios.get(`http://localhost:8080/api/books/${id}`);
+        const response = await api.get(`/books/${id}`);
         setBook(response.data);
       } catch (error) {
         setError('Error fetching book details');
@@ -48,13 +48,7 @@ const BookDetails = () => {
 
   const handleBorrow = async () => {
     try {
-      const response = await axios.post(
-        `http://localhost:8080/api/borrowings/borrow/${id}`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const response = await api.post(`/borrowings/borrow/${id}`);
       setSuccessMessage('Book borrowed successfully');
       setBook(prev => prev ? { ...prev, availableCopies: prev.availableCopies - 1 } : null);
     } catch (error: any) {

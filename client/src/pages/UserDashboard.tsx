@@ -14,8 +14,8 @@ import {
   TableRow,
   Alert,
 } from '@mui/material';
-import axios from 'axios';
-import { RootState } from '../store/store';
+import { RootState } from '../store';
+import api from '../api/axios';
 
 interface Book {
   id: number;
@@ -42,9 +42,7 @@ const UserDashboard = () => {
   useEffect(() => {
     const fetchBorrowings = async () => {
       try {
-        const response = await axios.get('http://localhost:8080/api/borrowings/user', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await api.get('/borrowings/user');
         setBorrowings(response.data.content);
       } catch (error) {
         setError('Error fetching your borrowings');
@@ -52,7 +50,7 @@ const UserDashboard = () => {
     };
 
     fetchBorrowings();
-  }, [token]);
+  }, []);
 
   return (
     <Container>

@@ -1,5 +1,6 @@
 package com.library.lms.controller;
 
+import com.library.lms.dto.BookSearchDTO;
 import com.library.lms.model.Book;
 import com.library.lms.model.BookBorrowing;
 import com.library.lms.service.BookBorrowingService;
@@ -13,6 +14,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import com.library.lms.model.User;
+import org.springframework.data.web.PageableDefault;
 
 @RestController
 @RequestMapping("/api/books")
@@ -23,15 +25,9 @@ public class BookController {
 
     @GetMapping("/search")
     public ResponseEntity<Page<Book>> searchBooks(
-            @RequestParam(required = false) String title,
-            @RequestParam(required = false) String author,
-            @RequestParam(required = false) String genre,
-            @RequestParam(required = false) String publisher,
-            @RequestParam(required = false) Integer publicationYear,
-            @RequestParam(defaultValue = "false") boolean availableOnly,
-            Pageable pageable) {
-        return ResponseEntity.ok(bookService.searchBooks(title, author, genre, publisher, 
-                                                       publicationYear, availableOnly, pageable));
+            @ModelAttribute BookSearchDTO searchDTO,
+            @PageableDefault(size = 10, sort = "title") Pageable pageable) {
+        return ResponseEntity.ok(bookService.searchBooks(searchDTO, pageable));
     }
 
     @PostMapping

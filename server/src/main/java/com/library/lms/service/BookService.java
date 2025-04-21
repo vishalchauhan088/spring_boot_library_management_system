@@ -1,7 +1,9 @@
 package com.library.lms.service;
 
+import com.library.lms.dto.BookSearchDTO;
 import com.library.lms.model.Book;
 import com.library.lms.repository.BookRepository;
+import com.library.lms.repository.BookSpecification;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -18,6 +20,10 @@ public class BookService {
                                 boolean availableOnly, Pageable pageable) {
         return bookRepository.searchBooks(title, author, genre, publisher, 
                                         publicationYear, availableOnly, pageable);
+    }
+
+    public Page<Book> searchBooks(BookSearchDTO searchDTO, Pageable pageable) {
+        return bookRepository.findAll(BookSpecification.searchBooks(searchDTO), pageable);
     }
 
     @Transactional
