@@ -1,0 +1,46 @@
+# Maven
+/target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Eclipse
+*.classpath
+*.project
+*.settings/
+
+# IntelliJ IDEA
+*.iml
+.idea/
+out/
+
+# NetBeans
+nbproject/private/
+build/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
+# VS Code
+.vscode/
+
+# Environment files
+*.env
+
+# Java
+*.class
+
+# Temporary files
+*.tmp
+*.swp
+*~
+
+# Application properties (optional if you store secrets here)
+application.properties
+application.yml
