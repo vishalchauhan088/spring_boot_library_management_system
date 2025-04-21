@@ -10,6 +10,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import com.library.lms.model.User;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/borrowings")
@@ -43,6 +44,12 @@ public class BookBorrowingController {
             @PathVariable Long userId,
             Pageable pageable) {
         return ResponseEntity.ok(borrowingService.getUserBorrowings(userId, pageable));
+    }
+
+    @GetMapping("/book/{bookId}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<BookBorrowing>> getBookBorrowings(@PathVariable Long bookId) {
+        return ResponseEntity.ok(borrowingService.getBookBorrowings(bookId));
     }
 
     @PostMapping("/check-overdue")

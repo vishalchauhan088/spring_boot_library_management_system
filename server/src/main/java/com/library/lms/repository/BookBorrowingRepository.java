@@ -14,4 +14,5 @@ public interface BookBorrowingRepository extends JpaRepository<BookBorrowing, Lo
     boolean existsByUserIdAndBookIdAndReturnDateIsNull(Long userId, Long bookId);
     Page<BookBorrowing> findByUserId(Long userId, Pageable pageable);
     List<BookBorrowing> findByReturnDateIsNullAndDueDateBefore(LocalDateTime dueDate);
+    List<BookBorrowing> findByBookId(Long bookId);
 } 

@@ -15,8 +15,16 @@ import {
   DialogActions,
   TextField,
   IconButton,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Chip,
 } from '@mui/material';
-import { Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon } from '@mui/icons-material';
+import { Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon, LibraryBooks as LibraryBooksIcon } from '@mui/icons-material';
 import { toast } from 'react-toastify';
 import api from '../api/axios';
 import { useSelector } from 'react-redux';
@@ -47,6 +55,19 @@ interface BookFormData {
   description: string;
 }
 
+interface Borrowing {
+  id: number;
+  user: {
+    id: number;
+    username: string;
+    email: string;
+  };
+  borrowDate: string;
+  dueDate: string;
+  returnDate: string | null;
+  status: 'BORROWED' | 'RETURNED' | 'OVERDUE';
+}
+
 const initialFormData: BookFormData = {
   title: '',
   author: '',
@@ -63,9 +84,14 @@ const ManageBooks = () => {
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
   const [openDialog, setOpenDialog] = useState(false);
+  const [openBorrowingsDialog, setOpenBorrowingsDialog] = useState(false);
   const [formData, setFormData] = useState<BookFormData>(initialFormData);
   const [editingBookId, setEditingBookId] = useState<number | null>(null);
-  const { token } = useSelector((state: RootState) => state.auth);
+  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+  const [borrowings, setBorrowings] = useState<Borrowing[]>([]);
+  const [borrowingsLoading, setBorrowingsLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const { token, user } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
     fetchBooks();
@@ -155,6 +181,48 @@ const ManageBooks = () => {
     }
   };
 
+  const handleOpenBorrowingsDialog = async (book: Book) => {
+    setSelectedBook(book);
+    setOpenBorrowingsDialog(true);
+    await fetchBookBorrowings(book.id);
+  };
+
+  const fetchBookBorrowings = async (bookId: number) => {
+    setBorrowingsLoading(true);
+    try {
+      const response = await api.get(`/borrowings/book/${bookId}`);
+      setBorrowings(response.data);
+    } catch (error: any) {
+      console.error('Error fetching borrowings:', error);
+      toast.error('Failed to fetch borrowings');
+    } finally {
+      setBorrowingsLoading(false);
+    }
+  };
+
+  const handleReturnBook = async (borrowingId: number) => {
+    try {
+      await api.post(`/borrowings/return/${borrowingId}`);
+      toast.success('Book marked as returned');
+      if (selectedBook) {
+        await fetchBookBorrowings(selectedBook.id);
+        await fetchBooks(); // Refresh book list to update available copies
+      }
+    } catch (error: any) {
+      console.error('Error returning book:', error);
+      toast.error('Failed to return book');
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  const filteredBorrowings = borrowings.filter(borrowing => 
+    borrowing.user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    borrowing.user.email.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
@@ -220,6 +288,13 @@ const ManageBooks = () => {
                   onClick={() => handleDelete(book.id)}
                 >
                   <DeleteIcon />
+                </IconButton>
+                <IconButton
+                  size="small"
+                  color="info"
+                  onClick={() => handleOpenBorrowingsDialog(book)}
+                >
+                  <LibraryBooksIcon />
                 </IconButton>
               </CardActions>
             </Card>
@@ -322,6 +397,93 @@ const ManageBooks = () => {
           No books available
         </Typography>
       )}
+
+      <Dialog 
+        open={openBorrowingsDialog} 
+        onClose={() => setOpenBorrowingsDialog(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          Borrowing History - {selectedBook?.title}
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ mb: 2, mt: 1 }}>
+            <TextField
+              fullWidth
+              label="Search by username or email"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              variant="outlined"
+              size="small"
+            />
+          </Box>
+          
+          {borrowingsLoading ? (
+            <Box display="flex" justifyContent="center" my={3}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <TableContainer component={Paper}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>User</TableCell>
+                    <TableCell>Email</TableCell>
+                    <TableCell>Borrow Date</TableCell>
+                    <TableCell>Due Date</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {filteredBorrowings.map((borrowing) => (
+                    <TableRow key={borrowing.id}>
+                      <TableCell>{borrowing.user.username}</TableCell>
+                      <TableCell>{borrowing.user.email}</TableCell>
+                      <TableCell>{formatDate(borrowing.borrowDate)}</TableCell>
+                      <TableCell>{formatDate(borrowing.dueDate)}</TableCell>
+                      <TableCell>
+                        <Chip
+                          label={borrowing.status}
+                          color={
+                            borrowing.status === 'RETURNED'
+                              ? 'success'
+                              : borrowing.status === 'OVERDUE'
+                              ? 'error'
+                              : 'primary'
+                          }
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        {borrowing.status === 'BORROWED' && user?.role === 'ADMIN' && (
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() => handleReturnBook(borrowing.id)}
+                          >
+                            Mark Returned
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+          
+          {!borrowingsLoading && filteredBorrowings.length === 0 && (
+            <Typography variant="body1" sx={{ textAlign: 'center', my: 3 }}>
+              No borrowing records found
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenBorrowingsDialog(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };
