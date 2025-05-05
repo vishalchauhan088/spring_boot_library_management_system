@@ -37,6 +37,43 @@ A full-stack library management system built with Spring Boot and React.
 - Node.js 14 or higher
 - npm or yarn
 
+## Application.property File
+```
+   # Server Configuration
+server.port=8080
+
+# H2 Database Configuration
+spring.datasource.url=jdbc:h2:file:./data/librarydb
+spring.datasource.driverClassName=org.h2.Driver
+spring.datasource.username=sa
+spring.datasource.password=password
+spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
+spring.h2.console.enabled=true
+spring.h2.console.path=/h2-console
+
+# JPA Configuration
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+
+# SQL Initialization
+spring.sql.init.mode=never
+spring.jpa.defer-datasource-initialization=false
+
+# JWT Configuration
+jwt.secret=NWY3ZDRhMmEyYTQ5MzE0NmFiYzEyMzQ1Njc4OTAxMjM0NTY3ODkwYWJjZGVmMTIzNDU2Nzg5MA==
+jwt.expiration=86400000
+
+# Logging Configuration
+logging.level.root=INFO
+logging.level.com.library=DEBUG
+logging.level.org.springframework.security=DEBUG
+logging.pattern.console=%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n
+logging.file.name=logs/library-management-system.log
+logging.pattern.file=%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n 
+
+```
+
 ### Backend Setup
 1. Navigate to the server directory:
    ```bash
